@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Rain and Thunder Effect with Three.js</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 5vw;
+            text-align: center;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+            font-family: 'Poppins', sans-serif;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="overlay" class="overlay"></div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/geometries/TextGeometry.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/FontLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/TextureLoader.js"></script>
+
+    <script>
+        // SCENE
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x11111f, 0.002);
+
+        // CAMERA
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
+        camera.position.z = 1;
+        camera.rotation.x = 1.16;
+        camera.rotation.y = -0.12;
+        camera.rotation.z = 0.27;
+
+        // RENDERER
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setClearColor(scene.fog.color);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Ambient Light
+        const ambient = new THREE.AmbientLight(0x555555);
+        scene.add(ambient);
+
+        // Directional Light
+        const directionalLight = new THREE.DirectionalLight(0xffeedd);
+        directionalLight.position.set(0, 0, 1);
+        scene.add(directionalLight);
+
+        // Point Light for Lightning
+        const flash = new THREE.PointLight(0x062d89, 30, 500, 1.7);
+        flash.position.set(200, 300, 100);
+        scene.add(flash);
+
+        // Rain Effect
+        const rainCount = 9500;
+        const rainGeo = new THREE.BufferGeometry();
+        const rainVertices = new Float32Array(rainCount * 3);
+        for (let i = 0; i < rainCount; i++) {
+            rainVertices[i * 3] = Math.random() * 400 - 200;
+            rainVertices[i * 3 + 1] = Math.random() * 500 - 250;
+            rainVertices[i * 3 + 2] = Math.random() * 400 - 200;
+        }
+        rainGeo.setAttribute('position', new THREE.BufferAttribute(rainVertices, 3));
+
+        const rainMaterial = new THREE.PointsMaterial({
+            color: 0xaaaaaa,
+            size: 0.1,
+            transparent: true
+        });
+
+        const rain = new THREE.Points(rainGeo, rainMaterial);
+        scene.add(rain);
+
+        // Smoke/Clouds Texture Loader
+        const cloudParticles = [];
+        const loader = new THREE.TextureLoader();
+        loader.load("https://raw.githubusercontent.com/navin-navi/codepen-assets/master/images/smoke.png", function (texture) {
+            const cloudGeo = new THREE.PlaneBufferGeometry(500, 500);
+            const cloudMaterial = new THREE.MeshLambertMaterial({
+                map: texture,
+                transparent: true
+            });
+
+            for (let p = 0; p < 25; p++) {
+                const cloud = new THREE.Mesh(cloudGeo, cloudMaterial);
+                cloud.position.set(
+                    Math.random() * 800 - 400,
+                    500,
+                    Math.random() * 500 - 500
+                );
+                cloud.rotation.x = 1.16;
+                cloud.rotation.y = -0.12;
+                cloud.rotation.z = Math.random() * 2 * Math.PI;
+                cloud.material.opacity = 0.55;
+                cloudParticles.push(cloud);
+                scene.add(cloud);
+            }
+        });
+
+        // Render animation on every rendering phase
+        function render() {
+            renderer.render(scene, camera);
+            requestAnimationFrame(render);
+
+            // Cloud Rotation Animation
+            cloudParticles.forEach(p => {
+                p.rotation.z -= 0.002;
+            });
+
+            // RainDrop Animation
+            const positions = rainGeo.attributes.position.array;
+            for (let i = 0; i < rainCount; i++) {
+                positions[i * 3 + 1] -= 0.5 + Math.random() * 0.5; // Increased speed
+                if (positions[i * 3 + 1] < -200) {
+                    positions[i * 3 + 1] = 200;
+                }
+            }
+            rainGeo.attributes.position.needsUpdate = true;
+            rain.rotation.y += 0.002;
+
+            // Lightning Animation
+            if (Math.random() > 0.96 || flash.power > 100) {
+                if (flash.power < 100) {
+                    flash.position.set(
+                        Math.random() * 400,
+                        300 + Math.random() * 200,
+                        100
+                    );
+                }
+                flash.power = 50 + Math.random() * 500;
+            }
+        }
+
+        render();
+
+        // Update Camera Aspect Ratio and Renderer ScreenSize on Window resize
+        window.addEventListener('resize', function () {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }, false);
+
+        // Story messages
+        const messages = [
+            "You know",
+            "I haven't created",
+            "Something like this for anyone",
+            "In a long time",
+            "Oh!",
+            "Btw Good Morning",
+            "Pata nhi",
+            "Tumhe acchi lagegi yaa nahi",
+            "Thoda old fashion h shyd",
+            "Just want to say",
+            "You are important to me",
+            "Chal itna hi h bore krne ke lie",
+            "Bbye komal 😁",
+            "O waise ye varsha h",
+            "Jo uper se gir rahi h"
+        ];
+
+        let messageIndex = 0;
+        const overlay = document.getElementById('overlay');
+
+        function showNextMessage() {
+            if (messageIndex < messages.length) {
+                overlay.style.opacity = 0; // Start with opacity 0
+                setTimeout(() => {
+                    overlay.textContent = messages[messageIndex];
+                    overlay.style.opacity = 1; // Fade in
+                    messageIndex++;
+                    setTimeout(showNextMessage, 3000); // Change message every 3 seconds
+                }, 1000); // Wait 1 second before fading in new text
+            }
+        }
+
+        showNextMessage();
+    </script>
+</body>
+
+</html>
