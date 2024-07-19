@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>I Love You Card</title>
+    <style>
+        @import url(https://fonts.googleapis.com/css?family=Nobile:400italic,700italic);
+
+        html,
+        body {
+            overflow: hidden;
+            background-color: #e63946;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+        }
+
+        .card {
+            position: relative;
+            width: 90%;
+            max-width: 350px;
+            height: auto;
+            aspect-ratio: 300 / 425;
+            border: 10px solid #73BFB5;
+            box-shadow: inset 10px 0px 15px 0px rgba(0, 0, 0, 0.1);
+            background-color: #ffddd2;
+        }
+
+        .card .text-container {
+            width: 80%;
+            height: auto;
+            margin: auto;
+            padding: 20px 0;
+        }
+
+        .strikethrough {
+            text-decoration: line-through;
+        }
+
+        .card .text-container #head {
+            font-family: 'Nobile', sans-serif;
+            font-size: 1.5em;
+            margin: 20px auto;
+            text-align: center;
+        }
+
+        .card p {
+            font-size: 1em;
+            line-height: 1.4;
+            font-family: 'Nobile';
+            color: #331717;
+            font-style: italic;
+            text-align: center;
+            margin: 10px auto;
+        }
+
+        .card .front {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            margin: -10px 0px 0px -10px;
+            border: 10px solid #73BFB5;
+            backface-visibility: hidden;
+            background-color: #ff6f61;
+            background-size: contain;
+            transform-style: preserve-3d;
+            transform-origin: 0% 50%;
+            transform: perspective(800px) rotateY(0deg);
+            transition: all 0.8s ease-in-out;
+        }
+
+        .card:hover .front {
+            transform: perspective(800px) rotateY(-170deg);
+            background-color: #ff6f61;
+        }
+
+        .card:hover .back {
+            transform: perspective(800px) rotateY(-170deg);
+            box-shadow: 7px 0px 5px 0px rgba(0, 0, 0, 0.3), inset 2px 0px 15px 0px rgba(0, 0, 0, 0.1);
+            background-color: #ffd7ba;
+        }
+
+        .card .back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 10px solid #73BFB5;
+            margin: -10px 0px 0px -10px;
+            backface-visibility: visible;
+            filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, .5));
+            transform-style: preserve-3d;
+            transform-origin: 0% 50%;
+            transform: perspective(800px) rotateY(0deg);
+            transition: all 0.8s ease-in-out;
+            background-color: #ffddd2;
+            box-shadow: 0px 0px 0px 0px rgba(0, 0, 0, 0.1);
+        }
+
+        .cover-shape-large {
+            position: absolute;
+            width: 65%;
+            height: 48%;
+            top: 25%;
+            left: 18%;
+        }
+
+        .cover-shape-large .shape-block,
+        .cover-shape-large .shape-diamond {
+            background-color: #ff6f61;
+        }
+
+        .cover-shape-small {
+            position: absolute;
+            width: 50%;
+            height: 36%;
+            top: 30%;
+            left: 25%;
+        }
+
+        .shape-block {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-color: white;
+            border-radius: 50px;
+            box-shadow: 0 0 20px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        .shape-diamond {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-color: white;
+            box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.5);
+            transform: rotateZ(45deg);
+        }
+
+        .heart {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #ff6f61;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5em;
+            color: white;
+            box-shadow: 0 0 20px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        .flying-heart {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background-color: #ff6f61;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1em;
+            color: white;
+            animation: fly 4s ease-in-out infinite;
+        }
+
+        @keyframes fly {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+
+            100% {
+                opacity: 0;
+                transform: translateY(-200px) scale(1.5);
+            }
+        }
+
+        @media (max-width: 600px) {
+            .card {
+                max-width: 90%;
+                height: auto;
+            }
+
+            .card .text-container #head {
+                font-size: 1.2em;
+            }
+
+            .card p {
+                font-size: 0.9em;
+            }
+
+            .heart {
+                width: 40px;
+                height: 40px;
+                font-size: 1.2em;
+            }
+
+            .flying-heart {
+                width: 20px;
+                height: 20px;
+                font-size: 0.8em;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <div class="back"></div>
+        <div class="front">
+            <div class="cover-shape-large">
+                <div class="shape-diamond"></div>
+                <div class="shape-block"></div>
+            </div>
+            <div class="cover-shape-small">
+                <div class="shape-diamond"></div>
+                <div class="shape-block">
+                    <div class="heart">
+                        ❤️
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-container">
+            <p id="head">I Love You!</p>
+            <p>Your first digital love card! <span class="strikethrough">Handcrafted</span> Handcoded from scratch just
+                for you.</p>
+            <p>Hope your day goes great!</p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+    <script>
+        document.querySelector('.card').addEventListener('mouseover', function () {
+            const front = document.querySelector('.front');
+            front.style.transform = 'perspective(800px) rotateY(-170deg)';
+            setTimeout(function () {
+                const back = document.querySelector('.back');
+                back.style.transform = 'perspective(800px) rotateY(-170deg)';
+            }, 800);
+
+            createFlyingHearts();
+        });
+
+        function createFlyingHearts() {
+            const card = document.querySelector('.card');
+            for (let i = 0; i < 10; i++) {
+                const heart = document.createElement('div');
+                heart.className = 'flying-heart';
+                heart.textContent = '❤️';
+                heart.style.left = `${Math.random() * 100}%`;
+                heart.style.bottom = `0`;
+                card.appendChild(heart);
+
+                anime({
+                    targets: heart,
+                    translateY: -200,
+                    opacity: [1, 0],
+                    scale: [1, 1.5],
+                    easing: 'easeInOutQuad',
+                    duration: 2000 + Math.random() * 2000,
+                    complete: function (anim) {
+                        anim.animatables[0].target.remove();
+                    }
+                });
+            }
+        }
+    </script>
+</body>
+
+</html>
