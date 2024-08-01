@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Waterfall with Background Sounds and Messages using Three.js</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: black;
+        }
+
+        canvas {
+            display: none; /* Initially hide the canvas */
+        }
+
+        #playButton {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 20px 40px;
+            font-size: 2rem;
+            color: white;
+            background-color: rgba(0, 0, 0, 0.7);
+            border: 2px solid white;
+            border-radius: 10px;
+            cursor: pointer;
+            font-family: 'Poppins', sans-serif;
+            z-index: 10;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 5vw;
+            text-align: center;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+            font-family: 'Poppins', sans-serif;
+        }
+    </style>
+</head>
+
+<body>
+    <button id="playButton">Play</button>
+    <div id="overlay" class="overlay"></div>
+
+    <!-- Background sounds -->
+    <audio id="cricketSound" loop>
+        <source src="cricket-chirping-6231.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+    <audio id="backgroundMusic" loop>
+        <source src="song.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+    <audio id="waterfallSound" loop>
+        <source src="waterfall-176958.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+
+    <!-- Three.js scene setup -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/objects/Water.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+
+    <script>
+        // Play button functionality
+        document.getElementById('playButton').addEventListener('click', function () {
+            // Hide play button
+            this.style.display = 'none';
+
+            // Show the canvas
+            // document.querySelector('canvas').style.display = 'block';
+
+            // Play background sounds
+            document.getElementById('cricketSound').play();
+            document.getElementById('backgroundMusic').play();
+            document.getElementById('waterfallSound').play();
+
+            // Initialize the THREE.js scene
+            init();
+
+            // Start showing messages
+            showNextMessage();
+        });
+
+        // THREE.js Scene Initialization
+        let scene, camera, renderer, particles, particleSystem, water, bubbleParticles, bubbleSystem, starParticles, moon;
+
+        function init() {
+            // Scene setup
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0xcccccc, 0.002); // Light smog
+
+            // Camera setup
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 2000);
+            camera.position.set(0, 100, 300);
+
+            // Renderer setup
+            renderer = new THREE.WebGLRenderer();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            // Load the mountain model
+            const loader = new THREE.GLTFLoader();
+            loader.load('Mountain.glb', function (gltf) {
+                const mountain = gltf.scene;
+                mountain.position.set(0, -50, -250);
+                // mountain.scale.set(50, 50, 50); // Adjust the scale for better visibility
+                scene.add(mountain);
+            }, undefined, function (error) {
+                console.error(error);
+            });
+
+            // Waterfall particles
+            const particleCount = 100000; // Increased particle count for denser waterfall
+            particles = new THREE.BufferGeometry();
+            const positions = [];
+            const velocities = [];
+
+            for (let i = 0; i < particleCount; i++) {
+                positions.push(
+                    (Math.random() - 0.5) * 40,
+                    Math.random() * 100 + 50,
+                    (Math.random() - 0.5) * 20
+                );
+
+                velocities.push(
+                    0,
+                    -(Math.random() * 0.5 + 0.2),
+                    0
+                );
+            }
+
+            particles.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            particles.setAttribute('velocity', new THREE.Float32BufferAttribute(velocities, 3));
+
+            const particleMaterial = new THREE.PointsMaterial({
+                color: 0x006F93, // Blue color for the waterfall
+                size: 0.2,
+                transparent: true,
+                opacity: 0.6
+            });
+
+            particleSystem = new THREE.Points(particles, particleMaterial);
+            scene.add(particleSystem);
+
+            // Water at the base of the waterfall (Ocean)
+            const waterGeometry = new THREE.PlaneGeometry(500, 500); // Increased size of the lake/ocean
+            water = new THREE.Water(
+                waterGeometry,
+                {
+                    textureWidth: 512,
+                    textureHeight: 512,
+                    waterNormals: new THREE.TextureLoader().load('https://threejs.org/examples/textures/waternormals.jpg', function (texture) {
+                        texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+                    }),
+                    alpha: 1.0,
+                    sunDirection: new THREE.Vector3(),
+                    sunColor: 0xffffff,
+                    waterColor: 0x006F93, // Blue color for the ocean
+                    distortionScale: 3.7,
+                    fog: scene.fog !== undefined
+                }
+            );
+
+            water.rotation.x = - Math.PI / 2;
+            water.position.set(0, -10, 0);
+            scene.add(water);
+
+            // Bubbles at the base of the waterfall
+            const bubbleCount = 1000;
+            bubbleParticles = new THREE.BufferGeometry();
+            const bubblePositions = [];
+            const bubbleVelocities = [];
+
+            for (let i = 0; i < bubbleCount; i++) {
+                bubblePositions.push(
+                    (Math.random() - 0.5) * 40,
+                    -8 + Math.random() * 2,
+                    (Math.random() - 0.5) * 20
+                );
+
+                bubbleVelocities.push(
+                    0,
+                    Math.random() * 0.02,
+                    0
+                );
+            }
+
+            bubbleParticles.setAttribute('position', new THREE.Float32BufferAttribute(bubblePositions, 3));
+            bubbleParticles.setAttribute('velocity', new THREE.Float32BufferAttribute(bubbleVelocities, 3));
+
+            const bubbleMaterial = new THREE.PointsMaterial({
+                color: 0xffffff,
+                size: 0.5,
+                transparent: true,
+                opacity: 0.7
+            });
+
+            bubbleSystem = new THREE.Points(bubbleParticles, bubbleMaterial);
+            scene.add(bubbleSystem);
+
+            // Create stars in the sky
+            const starCount = 1000;
+            starParticles = new THREE.BufferGeometry();
+            const starPositions = [];
+
+            for (let i = 0; i < starCount; i++) {
+                starPositions.push(
+                    (Math.random() - 0.5) * 1000,
+                    Math.random() * 500 + 200, // Higher in the sky
+                    (Math.random() - 0.5) * 1000
+                );
+            }
+
+            starParticles.setAttribute('position', new THREE.Float32BufferAttribute(starPositions, 3));
+
+            const starMaterial = new THREE.PointsMaterial({
+                color: 0xffffff,
+                size: 1.5,
+                transparent: true,
+                opacity: 0.9
+            });
+
+            const starSystem = new THREE.Points(starParticles, starMaterial);
+            scene.add(starSystem);
+
+            // Create the moon
+            const moonGeometry = new THREE.SphereGeometry(20, 32, 32); // Corrected size for the moon
+            const moonMaterial = new THREE.MeshBasicMaterial({
+                map: new THREE.TextureLoader().load('https://threejs.org/examples/textures/moon.jpg')
+            });
+
+            moon = new THREE.Mesh(moonGeometry, moonMaterial);
+            moon.position.set(-100, 300, -400);
+            scene.add(moon);
+
+            // Light
+            const ambientLight = new THREE.AmbientLight(0x404040);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+            directionalLight.position.set(0, 100, 100);
+            scene.add(directionalLight);
+
+            // Controls
+            // const controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+            // Animation loop
+            function animate() {
+                requestAnimationFrame(animate);
+
+                // Update waterfall particle positions
+                const positions = particles.attributes.position.array;
+                const velocities = particles.attributes.velocity.array;
+
+                for (let i = 0; i < positions.length; i += 3) {
+                    positions[i + 1] += velocities[i + 1];
+
+                    if (positions[i + 1] < -10) {
+                        positions[i + 1] = Math.random() * 100 + 50;
+                    }
+                }
+
+                particles.attributes.position.needsUpdate = true;
+
+                // Update bubble positions
+                const bubblePositions = bubbleParticles.attributes.position.array;
+                const bubbleVelocities = bubbleParticles.attributes.velocity.array;
+
+                for (let i = 0; i < bubblePositions.length; i += 3) {
+                    bubblePositions[i + 1] += bubbleVelocities[i + 1];
+
+                    if (bubblePositions[i + 1] > -6) {
+                        bubblePositions[i + 1] = -8 + Math.random() * 2;
+                    }
+                }
+
+                bubbleParticles.attributes.position.needsUpdate = true;
+
+                water.material.uniforms['time'].value += 1.0 / 60.0;
+
+                renderer.render(scene, camera);
+            }
+
+            animate();
+        }
+
+        // Resize
+        window.addEventListener('resize', function () {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Story messages
+            const messages = [
+                "Hi, Good Morningggg! ☀️",
+                "Tune bola tha naa,",
+                "Ki agar background me music hota,",
+                "To bahut accha lagta.",
+                "Thoda time laga,",
+                "Par dhoond liya maine. 🎶",
+                "Yeh bas isliye hai,",
+                "Ki teri har choti badi iccha,",
+                "Mere liye important hai.",
+                "No matter kya hai,",
+                "Aur uske liye kya karna padega.",
+                "Tu bas bol,",
+                "Main kar dunga. 💪",
+                "Ho sakta hai thoda mehnat lage,",
+                "Par kar lunga tere liye.",
+                "Baaki batao, kya haal hai?",
+                "I hope iss baar pasand aaye! 😁",
+                "Oh, by the way,",
+                "I love you 🥰"
+            ];
+
+
+        let messageIndex = 0;
+        const overlay = document.getElementById('overlay');
+
+        function showNextMessage() {
+            if (messageIndex < messages.length) {
+                overlay.style.opacity = 0; // Start with opacity 0
+                setTimeout(() => {
+                    overlay.textContent = messages[messageIndex];
+                    overlay.style.opacity = 1; // Fade in
+                    messageIndex++;
+                    setTimeout(showNextMessage, 3000); // Change message every 3 seconds
+                }, 1000); // Wait 1 second before fading in new text
+            }
+        }
+    </script>
+</body>
+
+</html>
