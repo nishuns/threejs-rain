@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snow Mountain with River</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000000;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        #start-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        #start-button {
+            padding: 15px 30px;
+            font-size: 24px;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 2px solid white;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        #start-button:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/objects/Water.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <audio id="backgroundMusic" loop autoplay>
+        <source src="./audio/sound.mp3" type="audio/mp3">
+        Your browser does not support the audio element.
+    </audio>
+    <div id="scene-container" style="display: none;">
+        <!-- Three.js will render here -->
+    </div>
+    <div id="start-screen">
+        <button id="start-button">Start Experience</button>
+    </div>
+    <script>
+        // Scene setup
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xa0c9ff); // Light blue for snowy sky
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 20, 50);
+
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById('scene-container').appendChild(renderer.domElement);
+
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+        directionalLight.position.set(10, 20, 10);
+        directionalLight.castShadow = true;
+        scene.add(directionalLight);
+
+        // Create Mountain
+        const mountainGeometry = new THREE.PlaneGeometry(100, 100, 256, 256);
+        const mountainMaterial = new THREE.MeshStandardMaterial({
+            map: new THREE.TextureLoader().load('./textures/snow.jpg'),
+            displacementMap: new THREE.TextureLoader().load('./textures/heightmap.jpg'),
+            displacementScale: 10,
+        });
+        const mountain = new THREE.Mesh(mountainGeometry, mountainMaterial);
+        mountain.rotation.x = -Math.PI / 2;
+        scene.add(mountain);
+
+        // Create River
+        const waterGeometry = new THREE.PlaneGeometry(100, 10);
+        const water = new THREE.Water(waterGeometry, {
+            color: 0x001e0f,
+            scale: 4,
+            flowDirection: new THREE.Vector2(1, 1),
+            textureWidth: 512,
+            textureHeight: 512,
+        });
+        water.position.y = 0.5;
+        water.rotation.x = -Math.PI / 2;
+        scene.add(water);
+
+        // Add Controls
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.autoRotate = true; // Enable auto-rotation
+        controls.autoRotateSpeed = 2.0; // Set rotation speed (default is 2.0)
+
+        // Snow Particles
+        const snowGeometry = new THREE.BufferGeometry();
+        const snowCount = 1000;
+        const snowPositions = new Float32Array(snowCount * 3);
+
+        for (let i = 0; i < snowCount; i++) {
+            snowPositions[i * 3] = (Math.random() - 0.5) * 200;
+            snowPositions[i * 3 + 1] = Math.random() * 50;
+            snowPositions[i * 3 + 2] = (Math.random() - 0.5) * 200;
+        }
+
+        snowGeometry.setAttribute('position', new THREE.BufferAttribute(snowPositions, 3));
+        const snowMaterial = new THREE.PointsMaterial({
+            color: 0xffffff,
+            size: 0.5,
+            transparent: true,
+            opacity: 0.8,
+        });
+        const snowParticles = new THREE.Points(snowGeometry, snowMaterial);
+        scene.add(snowParticles);
+
+        // Load varsha model
+        const loader = new THREE.GLTFLoader();
+        loader.load(
+            './models/varsha.glb', // Make sure this path points to where your model is stored
+            function (gltf) {
+                const model = gltf.scene;
+                // Scale the model if needed
+                model.scale.set(5, 5, 5);
+                
+                // Position the model on the mountain
+                model.position.set(0, 8, 0);
+                
+                // Add shadows
+                model.traverse(function (node) {
+                    if (node.isMesh) {
+                        node.castShadow = true;
+                        node.receiveShadow = true;
+                    }
+                });
+                
+                scene.add(model);
+            },
+            // Loading progress callback
+            function (xhr) {
+                console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+            },
+            // Error callback
+            function (error) {
+                console.error('An error occurred loading the model:', error);
+            }
+        );
+
+        // Audio setup
+        const backgroundMusic = document.getElementById('backgroundMusic');
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+        // Add a button for user interaction (needed due to browser autoplay policies)
+        const playButton = document.createElement('button');
+        playButton.textContent = '🎵 Play Music';
+        playButton.style.position = 'fixed';
+        playButton.style.bottom = '20px';
+        playButton.style.right = '20px';
+        playButton.style.padding = '10px 20px';
+        playButton.style.backgroundColor = '#ffffff';
+        playButton.style.border = 'none';
+        playButton.style.borderRadius = '5px';
+        playButton.style.cursor = 'pointer';
+        playButton.style.zIndex = '1000';
+
+        document.body.appendChild(playButton);
+
+        // Add click event to handle music
+        playButton.addEventListener('click', function() {
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+            
+            if (backgroundMusic.paused) {
+                backgroundMusic.play();
+                playButton.textContent = '🔇 Mute Music';
+            } else {
+                backgroundMusic.pause();
+                playButton.textContent = '🎵 Play Music';
+            }
+        });
+
+        // Optional: Adjust volume
+        backgroundMusic.volume = 0.5; // 50% volume
+
+        // Animation Loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Move snow
+            snowGeometry.attributes.position.array.forEach((val, index) => {
+                if (index % 3 === 1) {
+                    snowGeometry.attributes.position.array[index] -= 0.1;
+                    if (snowGeometry.attributes.position.array[index] < 0) {
+                        snowGeometry.attributes.position.array[index] = Math.random() * 50;
+                    }
+                }
+            });
+            snowGeometry.attributes.position.needsUpdate = true;
+
+            // Update controls for auto-rotation
+            controls.update();
+
+            renderer.render(scene, camera);
+        }
+
+        // Handle start experience
+        const startScreen = document.getElementById('start-screen');
+        const startButton = document.getElementById('start-button');
+
+        startButton.addEventListener('click', function() {
+            startScreen.style.display = 'none';
+            document.getElementById('scene-container').style.display = 'block';
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+            backgroundMusic.play();
+            animate();
+
+            // Create and animate sun after 3 seconds
+            setTimeout(() => {
+                const sunGeometry = new THREE.SphereGeometry(5, 32, 32);
+                const sunMaterial = new THREE.MeshBasicMaterial({
+                    color: 0xffff00,
+                    transparent: true,
+                    opacity: 0
+                });
+                const sun = new THREE.Mesh(sunGeometry, sunMaterial);
+                sun.position.set(30, 30, -20);
+                scene.add(sun);
+
+                const sunGlow = new THREE.PointLight(0xffff00, 0, 100);
+                sunGlow.position.copy(sun.position);
+                scene.add(sunGlow);
+
+                let sunOpacity = 0;
+                let sunIntensity = 0;
+                
+                const sunAnimation = setInterval(() => {
+                    if (sunOpacity >= 1) {
+                        clearInterval(sunAnimation);
+                    }
+                    sunOpacity += 0.02;
+                    sunIntensity += 0.05;
+                    
+                    sun.material.opacity = sunOpacity;
+                    sunGlow.intensity = sunIntensity;
+                }, 50);
+            }, 45000);
+        });
+    </script>
+</body>
+
+</html>

@@ -310,26 +310,29 @@
         });
 
         // Story messages
+            // messages is an array of objects containing story messages and their properties
+            // These messages are displayed sequentially on the overlay
+            // Each message is shown for a duration specified in its object before fading to the next one
             const messages = [
-                "Hi, Good Morningggg! ☀️",
-                "Tune bola tha naa,",
-                "Ki agar background me music hota,",
-                "To bahut accha lagta.",
-                "Thoda time laga,",
-                "Par dhoond liya maine. 🎶",
-                "Yeh bas isliye hai,",
-                "Ki teri har choti badi iccha,",
-                "Mere liye important hai.",
-                "No matter kya hai,",
-                "Aur uske liye kya karna padega.",
-                "Tu bas bol,",
-                "Main kar dunga. 💪",
-                "Ho sakta hai thoda mehnat lage,",
-                "Par kar lunga tere liye.",
-                "Baaki batao, kya haal hai?",
-                "I hope iss baar pasand aaye! 😁",
-                "Oh, by the way,",
-                "I love you 🥰"
+                { text: "Hi, Good Morningggg! ☀️", duration: 3000, fontSize: "5vw", color: "#FFD700" },
+                { text: "Tune bola tha naa,", duration: 2500, fontSize: "4.5vw", color: "#FF69B4" },
+                { text: "Ki agar background me music hota,", duration: 3000, fontSize: "4vw", color: "#00CED1" },
+                { text: "To bahut accha lagta.", duration: 2500, fontSize: "4.5vw", color: "#32CD32" },
+                { text: "Thoda time laga,", duration: 2000, fontSize: "5vw", color: "#FF6347" },
+                { text: "Par dhoond liya maine. 🎶", duration: 3000, fontSize: "4.5vw", color: "#9370DB" },
+                { text: "Yeh bas isliye hai,", duration: 2500, fontSize: "4vw", color: "#20B2AA" },
+                { text: "Ki teri har choti badi iccha,", duration: 3000, fontSize: "4.5vw", color: "#FF4500" },
+                { text: "Mere liye important hai.", duration: 3000, fontSize: "4vw", color: "#1E90FF" },
+                { text: "No matter kya hai,", duration: 2500, fontSize: "5vw", color: "#FF69B4" },
+                { text: "Aur uske liye kya karna padega.", duration: 3000, fontSize: "4vw", color: "#32CD32" },
+                { text: "Tu bas bol,", duration: 2000, fontSize: "5.5vw", color: "#FFD700" },
+                { text: "Main kar dunga. 💪", duration: 2500, fontSize: "5vw", color: "#FF6347" },
+                { text: "Ho sakta hai thoda mehnat lage,", duration: 3000, fontSize: "4vw", color: "#9370DB" },
+                { text: "Par kar lunga tere liye.", duration: 3000, fontSize: "4.5vw", color: "#00CED1" },
+                { text: "Baaki batao, kya haal hai?", duration: 2500, fontSize: "4.5vw", color: "#20B2AA" },
+                { text: "I hope iss baar pasand aaye! 😁", duration: 3000, fontSize: "4vw", color: "#FF4500" },
+                { text: "Oh, by the way,", duration: 2000, fontSize: "5vw", color: "#1E90FF" },
+                { text: "I love you 🥰", duration: 3500, fontSize: "6vw", color: "#FF69B4" }
             ];
 
 
