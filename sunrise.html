@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>Sunrise Bunny</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #000;  /* Changed to black */
+        }
+
+        #startScreen {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        #playButton {
+            padding: 30px 70px;
+            font-size: 3rem;
+            background: #ff69b4;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.3s, background 0.3s;
+            font-family: 'Arial', sans-serif;
+            box-shadow: 0 0 30px rgba(255, 105, 180, 0.7);  // Enhanced glow
+        }
+
+        #playButton:hover {
+            transform: scale(1.15);  // Increased hover scale
+            background: #ff1493;
+        }
+
+        #audioControl {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: none;  /* Initially hidden */
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Start Screen -->
+    <div id="startScreen">
+        <button id="playButton">Start ❤️</button>
+    </div>
+
+    <!-- Audio Control -->
+    <div id="audioControl">
+        <img src="https://cdn-icons-png.flaticon.com/512/3669/3669469.png" 
+             width="30" 
+             height="30" 
+             alt="music control"
+             id="audioIcon">
+    </div>
+
+    <!-- Audio Element -->
+    <audio id="bgMusic" loop>
+        <source src="./audio/sound2.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- THREE.js Bunny Sunrise Scene -->
+    <script type="module">
+        import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.154.0/build/three.module.js';
+
+        // Get DOM elements
+        const startScreen = document.getElementById('startScreen');
+        const playButton = document.getElementById('playButton');
+        const bgMusic = document.getElementById('bgMusic');
+        const audioControl = document.getElementById('audioControl');
+        const audioIcon = document.getElementById('audioIcon');
+
+        // Initially hide the scene
+        document.body.style.background = '#000';
+        let scene, camera, renderer;
+        let isPlaying = false;
+
+        // Start button click handler
+        playButton.addEventListener('click', () => {
+            startScreen.style.opacity = '0';
+            startScreen.style.transition = 'opacity 1s';
+            
+            setTimeout(() => {
+                startScreen.style.display = 'none';
+                initScene();  // Initialize the scene
+                bgMusic.play();  // Start the music
+                isPlaying = true;
+                audioControl.style.display = 'block';  // Show audio control
+            }, 1000);
+        });
+
+        // Audio control click handler
+        audioControl.addEventListener('click', () => {
+            if (isPlaying) {
+                bgMusic.pause();
+                audioIcon.style.opacity = '0.5';
+            } else {
+                bgMusic.play();
+                audioIcon.style.opacity = '1';
+            }
+            isPlaying = !isPlaying;
+        });
+
+        function initScene() {
+            // Move all your existing THREE.js initialization code here
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(
+                75,
+                window.innerWidth / window.innerHeight,
+                0.1,
+                1000
+            );
+            camera.position.z = 5;
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            // 2. LIGHT
+            const directionalLight = new THREE.DirectionalLight(0xffcc88, 1.5);
+            directionalLight.position.set(2, 5, 2);
+            scene.add(directionalLight);
+
+            // Add Sun
+            const sunGeometry = new THREE.SphereGeometry(3, 32, 32);
+            const sunMaterial = new THREE.MeshBasicMaterial({ color: 0xffdd44 });
+            const sun = new THREE.Mesh(sunGeometry, sunMaterial);
+            sun.position.set(-10, 15, -20);
+            scene.add(sun);
+
+            // Add Story Message with Carousel Effect
+            const messageDiv = document.createElement('div');
+            messageDiv.style.position = 'absolute';
+            messageDiv.style.bottom = '50px';
+            messageDiv.style.left = '50%';
+            messageDiv.style.transform = 'translateX(-50%)';
+            messageDiv.style.width = '80%';
+            messageDiv.style.textAlign = 'center';
+            messageDiv.style.color = '#FFFFFF';  // Pure white for better contrast
+            messageDiv.style.fontSize = '4.5em';  // Slightly larger
+            messageDiv.style.fontFamily = "'Dancing Script', 'Segoe Script', cursive";  // More readable decorative font
+            messageDiv.style.fontWeight = 'bold';  // Make text bolder
+            messageDiv.style.textShadow = '3px 3px 10px rgba(0,0,0,0.7), -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000';  // Multiple shadows for better outline
+            messageDiv.style.lineHeight = '1.4';
+            messageDiv.style.padding = '30px';  // More padding
+            messageDiv.style.background = 'rgba(0,0,0,0.4)';  // Slightly darker background
+            messageDiv.style.borderRadius = '20px';
+            messageDiv.style.opacity = '0';
+            messageDiv.style.transition = 'opacity 1s ease-in-out';
+            
+            // Add Google Fonts link for Dancing Script
+            const fontLink = document.createElement('link');
+            fontLink.href = 'https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap';
+            fontLink.rel = 'stylesheet';
+            document.head.appendChild(fontLink);
+            
+            document.body.appendChild(messageDiv);
+
+            // Story messages array
+            const messages = [
+                "Goooooooooood Morrrninnggg Shreeji! 🌅✨",
+                "Mujhe pata hai aaj kal tumhare mornings and evenings thodi tight hai 🥺",
+                "You know... mera chehra yaad aa jaata hai tumhe din me 🥰",
+                "Or raat ko sote hue bhi... kya kar sakte ho 😴💭",
+                "Chipk gya hu kismat me 🎯💫",
+                "But still... I love you 💝",
+                "And I owe you a heart ❤️",
+                "Actually... a lot of hearts 💖💗💓💞",
+                "And a lot of kisses jo maine bacha kar rakhi hai baad ke lie 😘💋",
+                "And a lot of hugs 🤗🫂",
+                "And gudgudi 🪽✨",
+                "Just so you know...",
+                "You are still the best decision of my life! 💑💫",
+                "Chalo gaana saath me sunte h poora 🎵",
+                "Waise tumhe pata hai tumne mujhe bahut kuch sikhaya like how to wear pant 👖",
+                "I think duniya ki sabse basic cheeze mujhe neend aane ki reason ho tum 😴",
+                "Mujhe nye dost dene ka reason ho tum 🤝",
+                "Tumhe pata when you are happy mujhe bahut acchi lgti h 😊",
+                "Prr when you are sad or angry or unhappy or soti hui jaagti hui... 🥺",
+                "I think tum har trah se mujhe passand ho 💫",
+                "Or shyd tumne kaha thi ki tum meri zidd ho 💝",
+                "Tumhare jaise zidd to krni hi chahiye 🎯",
+                "Kya lgta hai tumko? 🤔",
+                "Waise kya gaana khtm ho gya kya? 🎵",
+                "Acha sun aaj ka plan btata hu 📝",
+                "Subah uthke susu potty ka confusion hai 🚽",
+                "Pehle karu ya nahane ke baad karu 🤔",
+                "Thodi mehenat krni padegi aaj 💪",
+                "Door ke bhaiya ke function pe jaana hai 🎉",
+                "Raat tak wapas aa jaunga no tension 🌙",
+                "Waise tumhe pata hai mujhe tumhari yaad aati hai 💭",
+                "Har waqt, har pal, har lamha 🕰️",
+                "Kabhi kabhi lagta hai ki tum mere saath ho 👫",
+                "Par phir reality hit karti hai 😅",
+                "Lekin koi nahi, hum strong hai 💪",
+                "Aur humara pyaar bhi strong hai ❤️",
+                "Tumhe pata hai maine kal kya sapna dekha? 💭",
+                "Maine dekha ki hum dono beach pe hai 🏖️",
+                "Aur tum mujhe ice cream khila rahi ho 🍦",
+                "Phir maine tumhe ice cream se ganda kar diya 😋",
+                "Tum gussa ho gayi 😠",
+                "Par phir maine tumhe hug kiya 🤗",
+                "Aur tumhara gussa pighal gaya 🥰",
+                "Waise ye sapna nahi, future plan hai 😉",
+                "Bas itna hi tha... ab khtm 😊",
+                "Chlo ab kaam krr lu love you baccha 💝"
+            ];
+
+            // Total time to show all messages: 230 seconds (3 minutes 50 seconds)
+            // 46 messages × 5 seconds each = 230 seconds
+
+            let currentMessageIndex = 0;
+
+            // Function to update message with fade effect
+            function updateMessage() {
+                messageDiv.style.opacity = '0';  // Fade out
+                
+                setTimeout(() => {
+                    messageDiv.innerHTML = messages[currentMessageIndex];
+                    messageDiv.style.opacity = '1';  // Fade in
+                    
+                    currentMessageIndex = (currentMessageIndex + 1) % messages.length;  // Loop through messages
+                }, 1000);  // Wait for fade out before changing text
+            }
+
+            // Initial message display
+            updateMessage();
+
+            // Set interval for message updates (5 seconds per message)
+            setInterval(updateMessage, 5000);
+
+            // 3. SUNRISE GRADIENT SKY (SPHERE)
+            const skyGeometry = new THREE.SphereGeometry(50, 32, 32);
+            const skyMaterial = new THREE.ShaderMaterial({
+                uniforms: {
+                    topColor: { value: new THREE.Color(0xffa07a) },
+                    bottomColor: { value: new THREE.Color(0xfffacd) },
+                },
+                vertexShader: `
+              varying vec3 vPosition;
+              void main() {
+                vPosition = position;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+              }
+            `,
+                fragmentShader: `
+              varying vec3 vPosition;
+              uniform vec3 topColor;
+              uniform vec3 bottomColor;
+              void main() {
+                float gradient = (vPosition.y + 50.0) / 100.0;
+                gl_FragColor = vec4(mix(bottomColor, topColor, gradient), 1.0);
+              }
+            `,
+                side: THREE.BackSide
+            });
+            const sky = new THREE.Mesh(skyGeometry, skyMaterial);
+            scene.add(sky);
+
+            // 4. PANDA BODY
+            const bodyGeometry = new THREE.SphereGeometry(0.8, 32, 32);
+            const whiteMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0xFFFFFF,
+                roughness: 0.7,
+                metalness: 0.1
+            });
+            const blackMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x222222,
+                roughness: 0.7,
+                metalness: 0.1
+            });
+            
+            const body = new THREE.Mesh(bodyGeometry, whiteMaterial);
+            body.position.set(0, -0.2, 0);
+            body.scale.set(1, 1.2, 1);
+            scene.add(body);
+
+            // 5. PANDA HEAD
+            const headGeometry = new THREE.SphereGeometry(0.6, 32, 32);
+            const head = new THREE.Mesh(headGeometry, whiteMaterial);
+            head.position.set(0, 0.8, 0);
+            head.scale.set(1.2, 1.1, 1);
+            scene.add(head);
+
+            // 6. PANDA EARS
+            const earGeometry = new THREE.SphereGeometry(0.2, 32, 32);
+            
+            const leftEar = new THREE.Mesh(earGeometry, blackMaterial);
+            leftEar.position.set(-0.4, 1.3, -0.1);
+            leftEar.scale.set(0.8, 0.8, 0.3);
+            scene.add(leftEar);
+
+            const rightEar = new THREE.Mesh(earGeometry, blackMaterial);
+            rightEar.position.set(0.4, 1.3, -0.1);
+            rightEar.scale.set(0.8, 0.8, 0.3);
+            scene.add(rightEar);
+
+            // 7. PANDA EYES (Black Patches)
+            const eyePatchGeometry = new THREE.SphereGeometry(0.25, 32, 32);
+            
+            const leftEyePatch = new THREE.Mesh(eyePatchGeometry, blackMaterial);
+            leftEyePatch.position.set(-0.25, 0.9, 0.35);
+            leftEyePatch.scale.set(0.8, 1, 0.4);
+            scene.add(leftEyePatch);
+
+            const rightEyePatch = new THREE.Mesh(eyePatchGeometry, blackMaterial);
+            rightEyePatch.position.set(0.25, 0.9, 0.35);
+            rightEyePatch.scale.set(0.8, 1, 0.4);
+            scene.add(rightEyePatch);
+
+            // Actual Eyes
+            const eyeGeometry = new THREE.SphereGeometry(0.08, 32, 32);
+            const eyeMaterial = new THREE.MeshStandardMaterial({ color: 0x000000 });
+
+            const leftEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+            leftEye.position.set(-0.25, 0.85, 0.5);
+            scene.add(leftEye);
+
+            const rightEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+            rightEye.position.set(0.25, 0.85, 0.5);
+            scene.add(rightEye);
+
+            // 8. PANDA NOSE
+            const noseGeometry = new THREE.SphereGeometry(0.1, 32, 32);
+            const noseMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x222222,
+                roughness: 0.4,
+                metalness: 0.1
+            });
+            const nose = new THREE.Mesh(noseGeometry, noseMaterial);
+            nose.position.set(0, 0.7, 0.55);
+            nose.scale.set(1, 0.8, 1);
+            scene.add(nose);
+
+            // 9. FLOATING HEARTS
+            const hearts = [];
+            const heartShape = new THREE.Shape();
+            
+            // Create proper heart shape
+            heartShape.moveTo(0, 0);
+            heartShape.bezierCurveTo(-0.5, 0.5, -1, 0, 0, -1);
+            heartShape.bezierCurveTo(1, 0, 0.5, 0.5, 0, 0);
+            
+            const heartGeometry = new THREE.ExtrudeGeometry(heartShape, {
+                depth: 0.2,
+                bevelEnabled: true,
+                bevelThickness: 0.1,
+                bevelSize: 0.1,
+                bevelSegments: 3
+            });
+            
+            const heartMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0xff4d4d,
+                metalness: 0.3,
+                roughness: 0.6
+            });
+
+            for (let i = 0; i < 15; i++) {
+                const heart = new THREE.Mesh(heartGeometry, heartMaterial);
+                // Scale down the hearts
+                heart.scale.set(0.2, 0.2, 0.2);
+                // Randomize initial position
+                heart.position.set(
+                    Math.random() * 4 - 2,
+                    Math.random() * 2 + 0.5,
+                    Math.random() * 4 - 2
+                );
+                // Random rotation
+                heart.rotation.z = Math.random() * Math.PI;
+                heart.rotation.y = Math.random() * Math.PI;
+                scene.add(heart);
+                hearts.push(heart);
+            }
+
+            // 10. RESIZE HANDLER
+            window.addEventListener('resize', onWindowResize, false);
+            function onWindowResize() {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+
+            // 11. ANIMATION LOOP
+            function animate() {
+                requestAnimationFrame(animate);
+
+                const t = Date.now() * 0.002;
+                const bounce = Math.sin(t) * 0.05;
+
+                // Update all positions with bounce
+                body.position.y = -0.2 + bounce;
+                head.position.y = 0.8 + bounce;
+                leftEar.position.y = 1.3 + bounce;
+                rightEar.position.y = 1.3 + bounce;
+                leftEyePatch.position.y = 0.9 + bounce;
+                rightEyePatch.position.y = 0.9 + bounce;
+                leftEye.position.y = 0.85 + bounce;
+                rightEye.position.y = 0.85 + bounce;
+                nose.position.y = 0.7 + bounce;
+
+                // Sun rotation
+                const sunTime = Date.now() * 0.0001;
+                sun.position.x = -10 + Math.sin(sunTime) * 5;
+                sun.position.y = 15 + Math.cos(sunTime) * 2;
+
+                // Floating hearts drift upwards with rotation
+                hearts.forEach((heart, i) => {
+                    heart.position.y += 0.0015;
+                    heart.position.x += Math.sin(t + i) * 0.0005;
+                    heart.rotation.y += 0.01;
+                    // Reset heart if it goes too high
+                    if (heart.position.y > 3) {
+                        heart.position.y = Math.random() * 2 + 0.5;
+                        heart.position.x = Math.random() * 4 - 2;
+                        heart.position.z = Math.random() * 4 - 2;
+                        heart.rotation.z = Math.random() * Math.PI;
+                    }
+                });
+
+                renderer.render(scene, camera);
+            }
+
+            animate();
+        }
+
+        // Rest of your existing THREE.js code goes here...
+    </script>
+</body>
+
+</html>
