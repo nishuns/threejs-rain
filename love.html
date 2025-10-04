@@ -1,0 +1,1367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find Me in the Stars</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Georgia', serif;
+            overflow: hidden;
+            background: #000;
+        }
+
+        /* Start Screen */
+        #start-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at center, #0a0a20 0%, #000000 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            transition: opacity 1s ease;
+            overflow: hidden;
+        }
+
+        #start-screen::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background-image: 
+                radial-gradient(2px 2px at 20% 30%, white, transparent),
+                radial-gradient(2px 2px at 60% 70%, white, transparent),
+                radial-gradient(1px 1px at 50% 50%, white, transparent),
+                radial-gradient(1px 1px at 80% 10%, white, transparent),
+                radial-gradient(2px 2px at 90% 60%, white, transparent),
+                radial-gradient(1px 1px at 33% 80%, white, transparent),
+                radial-gradient(1px 1px at 15% 60%, white, transparent);
+            background-size: 200% 200%;
+            background-position: 0% 0%;
+            animation: twinkle 8s ease-in-out infinite;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        #start-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .start-title {
+            color: #fff;
+            font-size: 3em;
+            margin-bottom: 30px;
+            text-align: center;
+            text-shadow: 0 0 20px rgba(255,255,255,0.5);
+            animation: glow 2s ease-in-out infinite alternate;
+            position: relative;
+            z-index: 10;
+        }
+
+        @keyframes glow {
+            from { text-shadow: 0 0 20px rgba(255,255,255,0.5); }
+            to { text-shadow: 0 0 30px rgba(255,255,255,0.8), 0 0 40px rgba(100,150,255,0.5); }
+        }
+
+        .rocket-button {
+            width: 150px;
+            height: 150px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            filter: drop-shadow(0 10px 30px rgba(255,100,100,0.5));
+            position: relative;
+            z-index: 10;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .rocket-button:hover {
+            transform: scale(1.1) translateY(-10px);
+        }
+
+        .rocket-button:active {
+            transform: scale(1.05) translateY(-5px);
+        }
+
+        .rocket-button.launching {
+            animation: rocketLaunch 2s ease-in forwards;
+        }
+
+        @keyframes rocketLaunch {
+            0% {
+                transform: translateY(0) scale(1);
+            }
+            50% {
+                transform: translateY(-100px) scale(1.2);
+            }
+            100% {
+                transform: translateY(-1500px) scale(0.5);
+                opacity: 0;
+            }
+        }
+
+        .start-instruction {
+            color: #88ddff;
+            font-size: 1.2em;
+            margin-top: 30px;
+            text-align: center;
+            animation: pulse 2s ease-in-out infinite;
+            position: relative;
+            z-index: 10;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            cursor: grab;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        #canvas-container.orbit-disabled {
+            cursor: pointer !important;
+        }
+
+        #canvas-container:not(.orbit-disabled):active {
+            cursor: grabbing;
+        }
+
+        /* Prompter Text */
+        .prompter-container {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            width: 90%;
+            max-width: 900px;
+            text-align: center;
+            padding: 0 15px;
+        }
+
+        .prompter-text {
+            color: #fff;
+            font-size: 1.8em;
+            text-shadow: 0 0 10px rgba(255,255,255,0.8), 0 0 20px rgba(100,150,255,0.5);
+            opacity: 0;
+            transition: opacity 1s ease;
+            margin-bottom: 10px;
+            line-height: 1.6;
+        }
+
+        .prompter-text.visible {
+            opacity: 1;
+        }
+
+        /* Message Box for hints and memories */
+        .message-box {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.8);
+            z-index: 15;
+            background: rgba(10, 10, 30, 0.95);
+            padding: 40px 50px;
+            border-radius: 25px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.4s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .message-box::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .message-box::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .message-box::-webkit-scrollbar-thumb {
+            background: rgba(136, 221, 255, 0.5);
+            border-radius: 10px;
+        }
+
+        .message-box::-webkit-scrollbar-thumb:hover {
+            background: rgba(136, 221, 255, 0.7);
+        }
+
+        .message-box.visible {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+            pointer-events: all;
+        }
+
+        .message-title {
+            color: #ffd700;
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .message-content {
+            color: #fff;
+            font-size: 1.3em;
+            line-height: 1.8;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .message-hint {
+            color: #88ddff;
+            font-size: 1.2em;
+            font-style: italic;
+            text-align: center;
+            margin-top: 25px;
+            padding-top: 25px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .close-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            padding: 12px 35px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1.1em;
+            margin-top: 25px;
+            font-family: 'Georgia', serif;
+            transition: all 0.3s ease;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .close-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.5);
+        }
+
+        .close-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* Wrong planet message */
+        .wrong-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 20;
+            background: rgba(255, 50, 50, 0.9);
+            padding: 30px 50px;
+            border-radius: 20px;
+            color: white;
+            font-size: 1.8em;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .wrong-message.visible {
+            opacity: 1;
+        }
+
+        /* Final message */
+        .final-message {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 25;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .final-message.visible {
+            display: flex;
+        }
+
+        .final-text {
+            color: #fff;
+            font-size: 3em;
+            text-align: center;
+            margin-bottom: 30px;
+            animation: finalGlow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes finalGlow {
+            from { text-shadow: 0 0 20px rgba(255,255,255,0.5); }
+            to { text-shadow: 0 0 40px rgba(255,255,255,0.9), 0 0 60px rgba(255,215,0,0.7); }
+        }
+
+        /* Controls - Bottom Left */
+        .controls-container {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: calc(100% - 40px);
+        }
+
+        .control-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .control-btn {
+            background: rgba(10, 10, 30, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .control-btn:hover {
+            background: rgba(10, 10, 30, 0.95);
+            border-color: rgba(255, 255, 255, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .control-btn:active {
+            transform: translateY(0);
+        }
+
+        .zoom-btn {
+            background: rgba(10, 10, 30, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .zoom-btn:hover {
+            background: rgba(10, 10, 30, 0.95);
+            border-color: rgba(255, 255, 255, 0.4);
+            transform: scale(1.1);
+        }
+
+        .zoom-btn:active {
+            transform: scale(0.95);
+        }
+
+        .speed-control {
+            background: rgba(10, 10, 30, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .speed-label {
+            color: #fff;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .speed-slider {
+            width: 100px;
+            height: 4px;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.2);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .speed-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+        }
+
+        .speed-slider::-moz-range-thumb {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            border: none;
+        }
+
+        .speed-value {
+            color: #88ddff;
+            font-size: 11px;
+            min-width: 35px;
+        }
+
+        .music-control {
+            background: rgba(10, 10, 30, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .music-control:hover {
+            background: rgba(10, 10, 30, 0.95);
+            border-color: rgba(255, 255, 255, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .music-control:active {
+            transform: translateY(0);
+        }
+
+        @media (max-width: 768px) {
+            .start-title {
+                font-size: 2em;
+                padding: 0 20px;
+            }
+            .rocket-button {
+                width: 120px;
+                height: 120px;
+            }
+            .start-instruction {
+                font-size: 1em;
+            }
+            .prompter-text {
+                font-size: 1.1em;
+                padding: 0 10px;
+            }
+            
+            /* Message Box Mobile */
+            .message-box {
+                padding: 25px 20px;
+                width: 95%;
+                max-height: 70vh;
+                border-radius: 15px;
+            }
+            .message-title {
+                font-size: 1.3em;
+                margin-bottom: 15px;
+            }
+            .message-content {
+                font-size: 1em;
+                line-height: 1.6;
+                margin-bottom: 15px;
+            }
+            .message-hint {
+                font-size: 0.95em;
+                margin-top: 15px;
+                padding-top: 15px;
+            }
+            .close-btn {
+                padding: 10px 25px;
+                font-size: 1em;
+                margin-top: 15px;
+            }
+            
+            /* Final Message Mobile */
+            .final-text {
+                font-size: 1.5em;
+                padding: 0 20px;
+            }
+            
+            /* Controls Mobile - Stack vertically */
+            .controls-container {
+                bottom: 10px;
+                left: 10px;
+                right: 10px;
+                flex-direction: column;
+                gap: 8px;
+                max-width: calc(100% - 20px);
+            }
+            .control-row {
+                width: 100%;
+                justify-content: center;
+            }
+            .speed-control {
+                width: 100%;
+                justify-content: space-between;
+            }
+            .speed-slider {
+                width: 60px;
+            }
+            .music-control {
+                width: 100%;
+                text-align: center;
+            }
+            .control-btn {
+                font-size: 11px;
+                padding: 6px 12px;
+            }
+            .zoom-btn {
+                width: 28px;
+                height: 28px;
+                font-size: 14px;
+            }
+            .speed-label {
+                font-size: 11px;
+            }
+            .speed-value {
+                font-size: 10px;
+                min-width: 30px;
+            }
+            
+            /* Wrong Message Mobile */
+            .wrong-message {
+                font-size: 1.3em;
+                padding: 20px 30px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .start-title {
+                font-size: 1.6em;
+            }
+            .prompter-container {
+                top: 10px;
+                padding: 0 10px;
+            }
+            .prompter-text {
+                font-size: 0.95em;
+                margin-bottom: 8px;
+            }
+            .message-box {
+                padding: 20px 15px;
+            }
+            .message-title {
+                font-size: 1.1em;
+            }
+            .message-content {
+                font-size: 0.9em;
+            }
+            .message-hint {
+                font-size: 0.85em;
+            }
+            .final-text {
+                font-size: 1.2em;
+            }
+            .controls-container {
+                bottom: 5px;
+                left: 5px;
+                right: 5px;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .prompter-text {
+                font-size: 0.85em;
+            }
+            .message-content {
+                font-size: 0.85em;
+            }
+            .control-btn {
+                font-size: 10px;
+                padding: 5px 10px;
+            }
+        }
+
+        /* Landscape mode adjustments */
+        @media (max-height: 500px) and (orientation: landscape) {
+            .prompter-container {
+                top: 5px;
+            }
+            .prompter-text {
+                font-size: 0.9em;
+                margin-bottom: 5px;
+            }
+            .message-box {
+                max-height: 85vh;
+                padding: 15px 20px;
+            }
+            .message-title {
+                font-size: 1.2em;
+                margin-bottom: 10px;
+            }
+            .message-content {
+                font-size: 0.95em;
+            }
+            .controls-container {
+                flex-direction: row;
+                bottom: 5px;
+                gap: 5px;
+            }
+            .control-row {
+                gap: 5px;
+            }
+            .speed-control {
+                width: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Start Screen -->
+    <div id="start-screen">
+        <h1 class="start-title">A Journey Through The Stars</h1>
+        <svg class="rocket-button" id="rocket" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <!-- Rocket Body -->
+            <path d="M 50 10 L 60 70 L 50 80 L 40 70 Z" fill="#e74c3c" stroke="#c0392b" stroke-width="2"/>
+            <!-- Rocket Window -->
+            <circle cx="50" cy="35" r="8" fill="#3498db" stroke="#2980b9" stroke-width="2"/>
+            <!-- Left Wing -->
+            <path d="M 40 50 L 25 70 L 40 65 Z" fill="#95a5a6" stroke="#7f8c8d" stroke-width="2"/>
+            <!-- Right Wing -->
+            <path d="M 60 50 L 75 70 L 60 65 Z" fill="#95a5a6" stroke="#7f8c8d" stroke-width="2"/>
+            <!-- Flame -->
+            <path d="M 45 80 Q 50 95 55 80" fill="#f39c12" opacity="0.8">
+                <animate attributeName="d" 
+                    values="M 45 80 Q 50 95 55 80; M 45 80 Q 50 100 55 80; M 45 80 Q 50 95 55 80" 
+                    dur="0.5s" 
+                    repeatCount="indefinite"/>
+            </path>
+            <path d="M 47 80 Q 50 90 53 80" fill="#e74c3c" opacity="0.8">
+                <animate attributeName="d" 
+                    values="M 47 80 Q 50 90 53 80; M 47 80 Q 50 95 53 80; M 47 80 Q 50 90 53 80" 
+                    dur="0.3s" 
+                    repeatCount="indefinite"/>
+            </path>
+        </svg>
+        <p class="start-instruction">Click the rocket to launch! 🚀</p>
+    </div>
+
+    <!-- Prompter Container -->
+    <div class="prompter-container" id="prompter"></div>
+
+    <!-- Canvas Container -->
+    <div id="canvas-container"></div>
+
+    <!-- Message Box -->
+    <div class="message-box" id="message-box">
+        <div class="message-title" id="msg-title"></div>
+        <div class="message-content" id="msg-content"></div>
+        <div class="message-hint" id="msg-hint"></div>
+        <button class="close-btn" id="close-btn">Continue</button>
+    </div>
+
+    <!-- Wrong Message -->
+    <div class="wrong-message" id="wrong-msg">Nope, that's the wrong planet! 🚫</div>
+
+    <!-- Final Message -->
+    <div class="final-message" id="final-message">
+        <div class="final-text">You Found Me! 💕<br>I'm here on Mercury, closest to your heart ❤️</div>
+    </div>
+
+    <!-- Controls - Bottom Left -->
+    <div class="controls-container">
+        <div class="control-row">
+            <button class="zoom-btn" id="zoom-out">−</button>
+            <button class="zoom-btn" id="zoom-in">+</button>
+            <button class="control-btn" id="rotation-toggle">🔄 Orbit: ON</button>
+        </div>
+        <div class="speed-control">
+            <span class="speed-label">Speed</span>
+            <input type="range" min="0" max="100" value="50" class="speed-slider" id="speed-slider">
+            <span class="speed-value" id="speed-value">50%</span>
+        </div>
+        <div class="music-control" id="music-toggle">🔊 Music</div>
+    </div>
+
+    <!-- Audio Element -->
+    <audio id="bg-music" loop>
+        <source src="ishqhai.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- Three.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        // ==================== PUZZLE DATA ====================
+        // Define the journey: 10 steps to find Nischay
+        const puzzleSteps = [
+            {
+                planet: 2, // Earth - First meeting
+                title: "💙 February 13th - The First Glance",
+                memory: "I saw you for the first time wearing a blue dress and denim jacket with sport shoes, black eyes and straight hair. You looked just... WOW. That's when I got a crush on you, Komal.",
+                hint: "Next, visit the red planet of passion - the 4th from the sun."
+            },
+            {
+                planet: 3, // Mars - Office
+                title: "🖤 September - The Office Moment",
+                memory: "I saw you again in the office. You were going for a trip wearing black jeans, black t-shirt and that check blue overshirt. Why wouldn't someone fall for you that time?",
+                hint: "Now travel to the giant - the 5th planet, the largest in our system."
+            },
+            {
+                planet: 4, // Jupiter - December home
+                title: "🏠 December - Where It All Started",
+                memory: "This is crucial - the moment everything changed. I saw you at your home running with a towel and toothbrush. Maybe people fall for beauty, but I fell for your simplicity. That's when I started loving you, Komal.",
+                hint: "Journey to the planet with beautiful rings - the 6th from the sun."
+            },
+            {
+                planet: 5, // Saturn - First alone meeting
+                title: "💬 April - Opening Up",
+                memory: "April, the month we first met alone. We had that conversation where you opened up with me, where you told me about you. I felt so close to you.",
+                hint: "Visit the distant ice giant - the 7th planet in blue."
+            },
+            {
+                planet: 6, // Uranus - Tattoo
+                title: "😰 April - The Tattoo Day",
+                memory: "Our 2nd meeting in April when you got your tattoo. Honestly, I was more scared than you were! But I was there for you.",
+                hint: "Travel to the farthest planet - the 8th and deepest blue."
+            },
+            {
+                planet: 7, // Neptune - First trip
+                title: "🚗 May - Our First Trip",
+                memory: "In May, we went on our first trip together. Although things weren't much attached yet, we had so much fun! I saw a different version of you on that trip.",
+                hint: "Now return closer to the sun - visit the bright and radiant 2nd planet."
+            },
+            {
+                planet: 1, // Venus - Edvanta party
+                title: "💝 The Edvanta Party",
+                memory: "I think we changed a lot after the Edvanta party when I slept in your lap in the warmth. That moment... I'll never forget it.",
+                hint: "Come back to where we started - the 3rd planet, our home."
+            },
+            {
+                planet: 2, // Earth - September lunch (tease!)
+                title: "😮 Ufff... You Just Missed Me!",
+                memory: "We met again in September, only for lunch but it was wonderful! I was here just a moment ago! Wish you were here sooner, Komal. Can you feel my presence?",
+                hint: "Quick! I'm moving fast. Try the giant planet again - the 5th one!"
+            },
+            {
+                planet: 4, // Jupiter - Home with Radhika (so close!)
+                title: "🏃 So Close Yet So Far!",
+                memory: "Finally we met again at your home and you introduced me to Radhika! You're getting warmer! I can sense you're almost there. Don't give up now!",
+                hint: "NOW! I'm waiting for you on Mercury - the 1st planet, closest to the sun's heart. Come find me! 💕"
+            },
+            {
+                planet: 0, // Mercury - FINAL (Best trip)
+                title: "💕 You Found Me!",
+                memory: "Here I am, Komal! Remember our bestest trip? We had a lotttt of fun! I wish we could've gone up to Chopta that time. I could add ON and ON and ON... maybe sometimes we don't see or forget, but we have these memories and we will make so many more. So here's to you, to us - I love you and I know you love me too. This solar system is proof of all the events that we are together, and just like Mercury, I'll revolve around you on the closest orbit, always. ❤️",
+                hint: "Through ups and downs, across the universe, my love for you never changes. You'll always find me in your heart. 🌟"
+            }
+        ];
+
+        // ==================== SETUP ====================
+        let scene, camera, renderer;
+        let sun, planets = [];
+        let stars = [];
+        let raycaster, mouse;
+        let currentStep = 0;
+        let canClick = true;
+        let speedMultiplier = 0.5;
+        let zoomLevel = 70;
+        const minZoom = 40;
+        const maxZoom = 120;
+        
+        // Orbit controls
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+        let cameraRotation = { x: 0, y: 0 };
+        let orbitEnabled = true;
+
+        const musicToggle = document.getElementById('music-toggle');
+        const bgMusic = document.getElementById('bg-music');
+        const messageBox = document.getElementById('message-box');
+        const closeBtn = document.getElementById('close-btn');
+        const wrongMsg = document.getElementById('wrong-msg');
+        const finalMessage = document.getElementById('final-message');
+        const startScreen = document.getElementById('start-screen');
+        const rocket = document.getElementById('rocket');
+
+        let isMusicPlaying = false;
+
+        // Planet data: [size, distance, speed, color, name]
+        const planetData = [
+            { size: 0.8, distance: 10, speed: 0.04, color: 0x8c7853, name: "Mercury" },
+            { size: 1.2, distance: 14, speed: 0.015, color: 0xffc649, name: "Venus" },
+            { size: 1.3, distance: 18, speed: 0.01, color: 0x4a90e2, name: "Earth" },
+            { size: 0.9, distance: 23, speed: 0.008, color: 0xe27b58, name: "Mars" },
+            { size: 3, distance: 32, speed: 0.002, color: 0xc88b3a, name: "Jupiter" },
+            { size: 2.5, distance: 42, speed: 0.0009, color: 0xfad5a5, name: "Saturn" },
+            { size: 1.8, distance: 52, speed: 0.0004, color: 0x4fd8eb, name: "Uranus" },
+            { size: 1.7, distance: 60, speed: 0.0001, color: 0x4b70dd, name: "Neptune" }
+        ];
+
+        // ==================== INIT THREE.JS ====================
+        function init() {
+            scene = new THREE.Scene();
+
+            camera = new THREE.PerspectiveCamera(
+                75,
+                window.innerWidth / window.innerHeight,
+                0.1,
+                1000
+            );
+            // Initial camera position will be set by updateCameraPosition
+            cameraRotation.x = 0.6; // Slight downward angle
+            cameraRotation.y = 0.5; // Slight side angle
+            updateCameraPosition();
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setClearColor(0x000000, 1);
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
+            scene.add(ambientLight);
+
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+
+            createStars();
+            createSun();
+            createPlanets();
+
+            window.addEventListener('resize', onWindowResize);
+            document.getElementById('canvas-container').addEventListener('click', onPlanetClick);
+            document.getElementById('canvas-container').addEventListener('mousedown', onMouseDown);
+            document.getElementById('canvas-container').addEventListener('mousemove', onMouseMove);
+            document.getElementById('canvas-container').addEventListener('mouseup', onMouseUp);
+            document.getElementById('canvas-container').addEventListener('mouseleave', onMouseUp);
+            
+            // Touch events for mobile
+            document.getElementById('canvas-container').addEventListener('touchstart', onTouchStart, { passive: false });
+            document.getElementById('canvas-container').addEventListener('touchmove', onTouchMove, { passive: false });
+            document.getElementById('canvas-container').addEventListener('touchend', onTouchEnd);
+            
+            closeBtn.addEventListener('click', closeMessage);
+            musicToggle.addEventListener('click', toggleMusic);
+            document.getElementById('zoom-in').addEventListener('click', zoomIn);
+            document.getElementById('zoom-out').addEventListener('click', zoomOut);
+            document.getElementById('speed-slider').addEventListener('input', changeSpeed);
+            document.getElementById('rotation-toggle').addEventListener('click', toggleOrbitControls);
+            rocket.addEventListener('click', launchRocket);
+
+            animate();
+        }
+
+        // ==================== ROCKET LAUNCH ====================
+        function launchRocket() {
+            // Start music
+            bgMusic.play().catch(e => console.log('Music blocked'));
+            isMusicPlaying = true;
+
+            // Launch animation
+            rocket.classList.add('launching');
+
+            // Hide start screen and show prompter
+            setTimeout(() => {
+                startScreen.classList.add('hidden');
+                setTimeout(() => {
+                    startScreen.style.display = 'none';
+                    showPrompter();
+                }, 1000);
+            }, 2000);
+        }
+
+        // ==================== PROMPTER ====================
+        function showPrompter() {
+            const text = [
+                "Welcome to the Solar System of Love ❤️",
+                "Here you can see all the planets revolving around the sun.",
+                "If you are the sun right now,",
+                "you have to find me in these planets.",
+                "Click on the planets and they will give you hints",
+                "where you have to go next.",
+                "So Komal, let's find out where Nischay is! 🌟",
+                "💡 First Hint: Start from where we live - our home planet! 🌍"
+            ];
+
+            const prompter = document.getElementById('prompter');
+            let delay = 0;
+            let messageElements = [];
+
+            text.forEach((line, index) => {
+                setTimeout(() => {
+                    const p = document.createElement('div');
+                    p.className = 'prompter-text';
+                    p.textContent = line;
+                    prompter.appendChild(p);
+                    messageElements.push(p);
+                    
+                    setTimeout(() => {
+                        p.classList.add('visible');
+                    }, 100);
+
+                    // Keep only last 2 messages visible
+                    if (messageElements.length > 2) {
+                        const oldMessage = messageElements.shift();
+                        oldMessage.style.transition = 'opacity 0.5s ease';
+                        oldMessage.style.opacity = '0';
+                        setTimeout(() => {
+                            if (oldMessage.parentNode) {
+                                oldMessage.parentNode.removeChild(oldMessage);
+                            }
+                        }, 500);
+                    }
+                }, delay);
+                delay += 2000;
+            });
+
+            // Fade out prompter after showing all text (give more time for the hint)
+            setTimeout(() => {
+                prompter.style.transition = 'opacity 2s ease';
+                prompter.style.opacity = '0';
+                setTimeout(() => {
+                    prompter.style.display = 'none';
+                    canClick = true;
+                }, 2000);
+            }, delay + 4000);
+        }
+
+        // ==================== CREATE STARS ====================
+        function createStars() {
+            const starGeometry = new THREE.BufferGeometry();
+            const starCount = 3000;
+            const positions = new Float32Array(starCount * 3);
+            const colors = new Float32Array(starCount * 3);
+
+            for (let i = 0; i < starCount * 3; i += 3) {
+                const radius = 200 + Math.random() * 300;
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.acos(2 * Math.random() - 1);
+
+                positions[i] = radius * Math.sin(phi) * Math.cos(theta);
+                positions[i + 1] = radius * Math.sin(phi) * Math.sin(theta);
+                positions[i + 2] = radius * Math.cos(phi);
+
+                const colorChoice = Math.random();
+                if (colorChoice > 0.7) {
+                    colors[i] = 1; colors[i + 1] = 1; colors[i + 2] = 0.8;
+                } else if (colorChoice > 0.4) {
+                    colors[i] = 1; colors[i + 1] = 1; colors[i + 2] = 1;
+                } else {
+                    colors[i] = 0.8; colors[i + 1] = 0.9; colors[i + 2] = 1;
+                }
+            }
+
+            starGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            starGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+            const starMaterial = new THREE.PointsMaterial({
+                size: 1.5,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.8
+            });
+
+            const starField = new THREE.Points(starGeometry, starMaterial);
+            stars.push(starField);
+            scene.add(starField);
+        }
+
+        // ==================== CREATE SUN ====================
+        function createSun() {
+            const sunGeometry = new THREE.SphereGeometry(5, 32, 32);
+            const sunMaterial = new THREE.MeshBasicMaterial({
+                color: 0xfdb813,
+                emissive: 0xfdb813,
+                emissiveIntensity: 1
+            });
+            sun = new THREE.Mesh(sunGeometry, sunMaterial);
+            scene.add(sun);
+
+            const glowGeometry = new THREE.SphereGeometry(6.5, 32, 32);
+            const glowMaterial = new THREE.MeshBasicMaterial({
+                color: 0xff9500,
+                transparent: true,
+                opacity: 0.3
+            });
+            const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+            sun.add(glow);
+
+            const sunLight = new THREE.PointLight(0xffffff, 2, 200);
+            sun.add(sunLight);
+
+            const outerGlowGeometry = new THREE.SphereGeometry(8, 32, 32);
+            const outerGlowMaterial = new THREE.MeshBasicMaterial({
+                color: 0xffaa00,
+                transparent: true,
+                opacity: 0.15
+            });
+            const outerGlow = new THREE.Mesh(outerGlowGeometry, outerGlowMaterial);
+            sun.add(outerGlow);
+        }
+
+        // ==================== CREATE PLANETS ====================
+        function createPlanets() {
+            planetData.forEach((data, index) => {
+                const planetGeometry = new THREE.SphereGeometry(data.size, 32, 32);
+                const planetMaterial = new THREE.MeshPhongMaterial({
+                    color: data.color,
+                    shininess: 10
+                });
+                const planet = new THREE.Mesh(planetGeometry, planetMaterial);
+
+                const orbitGeometry = new THREE.BufferGeometry();
+                const orbitPoints = [];
+                const segments = 128;
+                for (let i = 0; i <= segments; i++) {
+                    const theta = (i / segments) * Math.PI * 2;
+                    orbitPoints.push(
+                        Math.cos(theta) * data.distance,
+                        0,
+                        Math.sin(theta) * data.distance
+                    );
+                }
+                orbitGeometry.setAttribute('position', new THREE.Float32BufferAttribute(orbitPoints, 3));
+                const orbitMaterial = new THREE.LineBasicMaterial({
+                    color: 0x444444,
+                    transparent: true,
+                    opacity: 0.3
+                });
+                const orbit = new THREE.Line(orbitGeometry, orbitMaterial);
+                scene.add(orbit);
+
+                planet.userData = {
+                    distance: data.distance,
+                    speed: data.speed,
+                    angle: Math.random() * Math.PI * 2,
+                    index: index,
+                    name: data.name
+                };
+
+                planets.push(planet);
+                scene.add(planet);
+
+                if (index === 5) {
+                    const ringGeometry = new THREE.RingGeometry(data.size * 1.5, data.size * 2.5, 64);
+                    const ringMaterial = new THREE.MeshBasicMaterial({
+                        color: 0xc9a863,
+                        side: THREE.DoubleSide,
+                        transparent: true,
+                        opacity: 0.7
+                    });
+                    const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+                    ring.rotation.x = Math.PI / 2;
+                    planet.add(ring);
+                }
+
+                if (index === 2) {
+                    const moonGeometry = new THREE.SphereGeometry(0.27, 16, 16);
+                    const moonMaterial = new THREE.MeshPhongMaterial({
+                        color: 0xaaaaaa
+                    });
+                    const moon = new THREE.Mesh(moonGeometry, moonMaterial);
+                    moon.position.set(2, 0, 0);
+                    planet.userData.moon = moon;
+                    planet.add(moon);
+                }
+            });
+        }
+
+        // ==================== PLANET CLICK ====================
+        function onPlanetClick(event) {
+            if (!canClick) return;
+
+            // Check if this was a drag or a click
+            const timeDiff = Date.now() - mouseDownTime;
+            const moveDist = Math.sqrt(
+                Math.pow(event.clientX - mouseDownPos.x, 2) + 
+                Math.pow(event.clientY - mouseDownPos.y, 2)
+            );
+            
+            // If mouse moved more than 5px or held for more than 200ms, it's a drag, not a click
+            if (moveDist > 5 || timeDiff > 200) return;
+
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(planets);
+
+            if (intersects.length > 0) {
+                const clickedPlanet = intersects[0].object;
+                const planetIndex = clickedPlanet.userData.index;
+
+                if (planetIndex === puzzleSteps[currentStep].planet) {
+                    showMessage(currentStep);
+                } else {
+                    showWrongMessage();
+                }
+            }
+        }
+
+        // ==================== SHOW MESSAGE ====================
+        function showMessage(stepIndex) {
+            canClick = false;
+            const step = puzzleSteps[stepIndex];
+
+            document.getElementById('msg-title').textContent = step.title;
+            document.getElementById('msg-content').textContent = step.memory;
+            document.getElementById('msg-hint').textContent = "💡 Hint: " + step.hint;
+
+            messageBox.classList.add('visible');
+        }
+
+        function closeMessage() {
+            messageBox.classList.remove('visible');
+            currentStep++;
+
+            if (currentStep >= puzzleSteps.length) {
+                setTimeout(() => {
+                    finalMessage.classList.add('visible');
+                }, 500);
+            } else {
+                canClick = true;
+            }
+        }
+
+        function showWrongMessage() {
+            wrongMsg.classList.add('visible');
+            setTimeout(() => {
+                wrongMsg.classList.remove('visible');
+            }, 1500);
+        }
+
+        // ==================== ANIMATION ====================
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (sun) {
+                sun.rotation.y += 0.002 * speedMultiplier;
+            }
+
+            planets.forEach((planet) => {
+                planet.userData.angle += planet.userData.speed * speedMultiplier;
+                planet.position.x = Math.cos(planet.userData.angle) * planet.userData.distance;
+                planet.position.z = Math.sin(planet.userData.angle) * planet.userData.distance;
+                planet.rotation.y += 0.01 * speedMultiplier;
+
+                if (planet.userData.moon) {
+                    planet.userData.moon.rotation.y += 0.05 * speedMultiplier;
+                }
+            });
+
+            stars.forEach(starField => {
+                starField.rotation.y += 0.0001 * speedMultiplier;
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        // ==================== ORBIT CONTROLS ====================
+        let mouseDownTime = 0;
+        let mouseDownPos = { x: 0, y: 0 };
+
+        function onMouseDown(event) {
+            mouseDownTime = Date.now();
+            mouseDownPos = { x: event.clientX, y: event.clientY };
+            
+            if (!orbitEnabled) return;
+            
+            isDragging = true;
+            previousMousePosition = {
+                x: event.clientX,
+                y: event.clientY
+            };
+        }
+
+        function onMouseMove(event) {
+            if (!isDragging || !orbitEnabled) return;
+
+            const deltaX = event.clientX - previousMousePosition.x;
+            const deltaY = event.clientY - previousMousePosition.y;
+
+            cameraRotation.y += deltaX * 0.005;
+            cameraRotation.x += deltaY * 0.005;
+
+            // Limit vertical rotation
+            cameraRotation.x = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, cameraRotation.x));
+
+            previousMousePosition = {
+                x: event.clientX,
+                y: event.clientY
+            };
+
+            updateCameraPosition();
+        }
+
+        function onMouseUp() {
+            isDragging = false;
+        }
+
+        function updateCameraPosition() {
+            const radius = zoomLevel;
+            camera.position.x = radius * Math.sin(cameraRotation.y) * Math.cos(cameraRotation.x);
+            camera.position.y = radius * Math.sin(cameraRotation.x);
+            camera.position.z = radius * Math.cos(cameraRotation.y) * Math.cos(cameraRotation.x);
+            camera.lookAt(0, 0, 0);
+        }
+
+        // Touch events for mobile
+        function onTouchStart(event) {
+            if (!orbitEnabled) {
+                mouseDownTime = Date.now();
+                const touch = event.touches[0];
+                mouseDownPos = { x: touch.clientX, y: touch.clientY };
+                return;
+            }
+            
+            if (event.touches.length === 1) {
+                event.preventDefault();
+                mouseDownTime = Date.now();
+                const touch = event.touches[0];
+                mouseDownPos = { x: touch.clientX, y: touch.clientY };
+                
+                isDragging = true;
+                previousMousePosition = {
+                    x: touch.clientX,
+                    y: touch.clientY
+                };
+            }
+        }
+
+        function onTouchMove(event) {
+            if (!isDragging || !orbitEnabled) return;
+            
+            if (event.touches.length === 1) {
+                event.preventDefault();
+                const touch = event.touches[0];
+                
+                const deltaX = touch.clientX - previousMousePosition.x;
+                const deltaY = touch.clientY - previousMousePosition.y;
+
+                cameraRotation.y += deltaX * 0.005;
+                cameraRotation.x += deltaY * 0.005;
+
+                cameraRotation.x = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, cameraRotation.x));
+
+                previousMousePosition = {
+                    x: touch.clientX,
+                    y: touch.clientY
+                };
+
+                updateCameraPosition();
+            }
+        }
+
+        function onTouchEnd(event) {
+            if (isDragging) {
+                isDragging = false;
+                return;
+            }
+            
+            // Handle tap as click
+            if (!canClick) return;
+            
+            const timeDiff = Date.now() - mouseDownTime;
+            if (timeDiff < 200) {
+                const touch = event.changedTouches[0];
+                const mockEvent = {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
+                };
+                onPlanetClick(mockEvent);
+            }
+        }
+
+        function toggleOrbitControls() {
+            orbitEnabled = !orbitEnabled;
+            const btn = document.getElementById('rotation-toggle');
+            const canvas = document.getElementById('canvas-container');
+            if (orbitEnabled) {
+                btn.textContent = '🔄 Orbit: ON';
+                canvas.classList.remove('orbit-disabled');
+            } else {
+                btn.textContent = '🔄 Orbit: OFF';
+                canvas.classList.add('orbit-disabled');
+            }
+        }
+
+        // ==================== ZOOM CONTROLS ====================
+        function zoomIn() {
+            zoomLevel = Math.max(minZoom, zoomLevel - 5);
+            updateCameraPosition();
+        }
+
+        function zoomOut() {
+            zoomLevel = Math.min(maxZoom, zoomLevel + 5);
+            updateCameraPosition();
+        }
+
+        // ==================== SPEED CONTROL ====================
+        function changeSpeed(event) {
+            const value = event.target.value;
+            speedMultiplier = value / 100;
+            document.getElementById('speed-value').textContent = value + '%';
+        }
+
+        // ==================== MUSIC ====================
+        function toggleMusic() {
+            if (isMusicPlaying) {
+                bgMusic.pause();
+                musicToggle.textContent = '🔇 Music';
+                isMusicPlaying = false;
+            } else {
+                bgMusic.play();
+                musicToggle.textContent = '🔊 Music';
+                isMusicPlaying = true;
+            }
+        }
+
+        // ==================== RESIZE ====================
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // ==================== START ====================
+        init();
+    </script>
+</body>
+</html>
